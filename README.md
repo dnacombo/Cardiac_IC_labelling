@@ -2,14 +2,14 @@
 Find automatically cardiac IC (Independent Component) without ECG
 
 
-% AUTHOR:
+%%%%%% AUTHOR %%%%%%
 
 Pierre Champetier (2024)
 Contact: pi.champetier@gmail.com
 
 
 
-% AIM:
+%%%%%% AIM %%%%%%
 
 This function takes EEG independent components (IC) as inputs, and finds the cardiac IC. 
   --> To do so:
@@ -23,7 +23,7 @@ This function takes EEG independent components (IC) as inputs, and finds the car
 
 
 
-% INPUTS:
+%%%%%% INPUTS %%%%%%
 
 1) comp --> your IC in FieldTrip format
      Ex: EEG = pop_runica(EEG,'icatype','runica','extended',1,'pca',round(dataRank/5)); % Run your ICA with EEGLAB
@@ -36,7 +36,7 @@ This function takes EEG independent components (IC) as inputs, and finds the car
 
 
 
-% USAGE:
+%%%%%% USAGE%%%%%%
 
 Minimum inputs:
 If plot_heart_IC == 0
@@ -47,7 +47,7 @@ If plot_heart_IC == 0
 
 
 
-% PARAMETERS:
+%%%%%% PARAMETERS %%%%%%
 
 You can easily change the parameters used at the begining of the function "A_fct_find_cardiac_IC.m"
 nb_IC_wanted = 3; % The heart IC must be in the top 3 of all IC for skewness, kurtosis... of Rampl, RRintervals...
@@ -60,7 +60,7 @@ min_recording_duration_sec = 20;
 
 
 
-% TOOLBOX USED TO DETECT CARDIAC EVENTS:
+%%%%%% TOOLBOX USED TO DETECT CARDIAC EVENTS %%%%%%
 
 Based on R. Sanghavi, F. Chheda, S. Kanchan and S. Kadge, "Detection Of Atrial Fibrillation in Electrocardiogram Signals using Machine Learning," 2021 2nd Global Conference for Advancement in Technology (GCAT), 2021, pp. 1-6, doi: 10.1109/GCAT52182.2021.9587664.
 Info : https://fr.mathworks.com/matlabcentral/fileexchange/73850-ecg-signal-pqrst-peak-detection-toolbox
@@ -68,7 +68,7 @@ Citation pour cette source: Rohan Sanghavi (2024). ECG SIGNAL PQRST PEAK DETECTI
 
 
 
-% DEPENDENCIES:
+%%%%%% DEPENDENCIES %%%%%%
 
 1) A_fct_test_unif.m (To test the uniform distribution of cardiac events)
 2) ECG_PQRST_VERSION_3 (Toolbox used to detect cardiac events) 
