@@ -61,6 +61,8 @@ threshold_cond_IC_method1 = 0.5;
 threshold_std_method2 = 2.5;
 threshold_regularity_signal_minmax = 1.5;
 min_recording_duration_sec = 20;
+mini_bouts_duration_for_SignalAmplRange = 5; % in sec
+
 
 %% Extract parameters
 
@@ -72,8 +74,20 @@ aaa_parameters_find_heart_IC.threshold_regularity_signal_minmax = threshold_regu
 aaa_parameters_find_heart_IC.threshold_cond_IC_method1 = threshold_cond_IC_method1;
 aaa_parameters_find_heart_IC.threshold_std_method2 = threshold_std_method2;
 aaa_parameters_find_heart_IC.min_recording_duration_sec = min_recording_duration_sec;
+aaa_parameters_find_heart_IC.mini_bouts_duration_for_SignalAmplRange = mini_bouts_duration_for_SignalAmplRange;
 
 fs = comp.fsample;
+
+% Checking that recording_duration_sec > mini_bouts_duration_for_SignalAmplRange
+sample_tot = 0;
+for i = 1:length(comp.trial)
+    sample_tot = sample_tot + length(comp.trial{1,i});
+end
+recording_duration_sec = sample_tot / fs;
+
+if recording_duration_sec < mini_bouts_duration_for_SignalAmplRange
+    error('Error: attempt to divide the recording into bouts with longer than the original recording (for the Signal Ampl Range checking). Change the value of mini_bouts_duration_for_SignalAmplRange variable in the function.')
+end
 
 
 %% Extract timecourse of each IC for all 1s-mini trials
@@ -280,7 +294,7 @@ for comp_iter = 1:length(comp.label)
     % Divide the recordings into mini segments and check that the abs(mean)
     % is similar for each segment
 
-    nbr_mini_segments = 10;
+    nbr_mini_segments = round((length(IC_timecourse(comp_iter,:)) / fs) / mini_bouts_duration_for_SignalAmplRange);
 
     % Extract the absolute value of the signal
     array = abs(IC_timecourse(comp_iter,:));
@@ -403,11 +417,11 @@ IC_Sampl_chi2stat = Sampl_chi2stat_all_IC(idx_chi2stat,1);
 
 % Bpm
 idx_bpm = intersect(  find((bpm_all_IC(:,2) > bpm_min)),  find(bpm_all_IC(:,2) < bpm_max) );
-IC_bpm = bpm_all_IC(idx_bpm,1);
+IC_bpm_ok = bpm_all_IC(idx_bpm,1);
 
 % SignalAmpl range
 idx_SignalAmpl_range = find(SignalAmpl_range_all_IC(:,2) < threshold_regularity_signal_minmax);
-IC_SignalAmpl_range = SignalAmpl_range_all_IC(idx_SignalAmpl_range,1);
+IC_SignalAmpl_range_ok = SignalAmpl_range_all_IC(idx_SignalAmpl_range,1);
 
 
 
@@ -452,8 +466,8 @@ for comp_iter = 1:length(comp.label)
         all_score = [all_score; comp_iter, prop_cond_ok];
 
         % Specific conditions that heart IC MUST meet (bpm and SignalAmplRange)
-        cond_bpm = ismember(comp_iter, IC_bpm);
-        cond_SignalAmpl_range = ismember(comp_iter, IC_SignalAmpl_range);
+        cond_bpm = ismember(comp_iter, IC_bpm_ok);
+        cond_SignalAmpl_range = ismember(comp_iter, IC_SignalAmpl_range_ok);
 
         % Determine if it's a heart IC
         if (prop_cond_ok >= threshold_cond_IC_method1) && (cond_bpm == 1) && (cond_SignalAmpl_range == 1)
@@ -488,11 +502,11 @@ Nbr_sec_ICA = size(comp.trial,2);
 % Candidates = IC with score > mean + n*std
 IC_heart_method2_candidates = all_score(find( all_score(:,2) > nanmean(all_score(:,2)) + threshold_std_method2*nanstd(all_score(:,2))),1);
 
-% For each candidate IC, check if 1) bpm physiological and 2) the
+% For each candidate IC, check if 1) bpm physiological and 2) the SignalAmplRange
 IC_heart_method2 = [];
 for i = 1:length(IC_heart_method2_candidates)
     iter = IC_heart_method2_candidates(i);
-    if ismember(iter, IC_bpm) && ismember(iter, IC_SignalAmpl_range) && ismember(iter,IC_heart_method2_candidates)
+    if ismember(iter, IC_bpm_ok) && ismember(iter, IC_SignalAmpl_range_ok) && ismember(iter,IC_heart_method2_candidates)
         IC_heart_method2 = [IC_heart_method2; iter];
     end
 end
@@ -501,13 +515,13 @@ end
 %% Summarize info in a table
 
 % Create a table for recording iter
-table_cardiac_IC = table({IC_bug}, {IC_bpm}, ...
+table_cardiac_IC = table({IC_bug}, {bpm_all_IC(:,2)}, {IC_bpm_ok}, {SignalAmpl_range_all_IC(:,2)}, {IC_SignalAmpl_range_ok},...
     {IC_RR_std_mean}, {IC_RR_skew}, {IC_RR_kurt}, {IC_RR_chi2stat},  ...
     {IC_Rampl_std_mean}, {IC_Rampl_skew}, {IC_Rampl_kurt}, {IC_Rampl_chi2stat}, ...
     {IC_heart_method2}, {IC_heart_method1_num}, {IC_heart_method1_score}, {all_score}, {score_other_IC}, {Max_score_other_IC}, {IC_heart_method1_bpm}, {Nbr_sec_ICA});
 
 % Rename table columns
- col_names = {'IC_bug', 'IC_bpm', ...
+ col_names = {'IC_bug', 'IC_bpm_all', 'IC_bpm_ok', 'SignalAmpl_range_all', 'SignalAmpl_range_ok',...
         'IC_RR_std_mean', 'IC_RR_skew', 'IC_RR_kurt', 'IC_RR_chi2stat', ...
         'IC_Rampl_std_mean', 'IC_Rampl_skew', 'IC_Rampl_kurt', 'IC_Rampl_chi2stat', ...
         'IC_heart_method2', 'IC_heart_method1', 'Prop_cond_ok_heart_IC', 'Prop_cond_ok_all_IC', 'Prop_cond_ok_other_IC', 'Max_prop_cond_ok_other_IC', 'bpm_final_IC', 'Nbr_sec_ICA'};
@@ -555,7 +569,7 @@ if plot_heart_IC == 1
     ylabel('Heart score (using pop_iclabel)');
     xlabel('Components');
     % %%%%% SAVE fig as .png %%%%%%%%
-    filename = strcat(path_output, '/', file_info, '_ECG_IC_label_PIERRE_fct.png');
+    filename = strcat(path_output, '/', file_info, '_ECG_IC_label_fct_find_cardiac.png');
     saveas(gcf, filename);
     close(gcf);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -568,7 +582,7 @@ if plot_heart_IC == 1
         plot([1:size(IC_timecourse,2)], IC_timecourse(IC_to_plot,:))
         title(['Cardiac component (IC ' num2str(IC_to_plot) ')'])
         % %%%%% SAVE fig as .png %%%%%%%%
-        filename = strcat(path_output, '/', file_info, '_ECG_PIERRE_time_course_heart_IC ', num2str(IC_to_plot), '.png');
+        filename = strcat(path_output, '/', file_info, '_ECG_fct_find_cardiac_time_course_heart_IC ', num2str(IC_to_plot), '.png');
         saveas(gcf, filename);
         close(gcf);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
