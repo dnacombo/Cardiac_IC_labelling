@@ -50,13 +50,15 @@ This function takes EEG independent components (IC) as inputs, and finds the car
 
 [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
 
-Example 1 (all default parameters):
+*** Example 1 (all default parameters):
+----------------------------------------
 EEG = pop_runica(EEG,'icatype','runica','extended',1,'pca',round(dataRank/5)); %Run your ICA with EEGLAB
 comp = eeglab2fieldtrip(EEG, 'comp'); % Convert into FieldTrip format
 cfg = [];
 [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
 
-Example 2 (If you want to use other parameters, specify them in cfg):
+***Example 2 (If you want to use other parameters, specify them in cfg):
+------------------------------------------------------------------------
 cfg = [];
 cfg.nb_IC_wanted = 5; % The heart IC must be in the top 5 of all IC for skewness, kurtosis... of Rampl, RRintervals...
 cfg.bpm_max = 120; % Max physiological bpm
