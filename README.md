@@ -28,20 +28,21 @@ This function takes EEG independent components (IC) as inputs, and finds the car
 
 %%%%%% INPUTS %%%%%%
 
-1) cfg --> all the parameters including:
-     -method_chosen --> 'absolute_threshold' (method 1) or 'mean_std' (method 2)
-     -plot_heart_IC --> 1 or 0 (to plot the IC labelled as cardiac)
-     -path_output --> path where you want to save i) the distribution of the scores (among all IC) and ii) timecourse of the identified cardiac IC (used only if plot_heart_IC == 1)
-     -file_info --> name of your recording (to add it in the name of your plot files) (used only if plot_heart_IC == 1)
-     -nb_IC_wanted --> number of IC selected for each metric (kurtosis, skewness...) [default: 3, to select the top 3 IC for each metric]
-     -bpm_min and bpm_max  --> expected heart beat per min, for sanity check [default: 45 and 90]
-     -threshold_cond_IC_method1 --> minimum proportion of conditions that must be met in order that an IC could be considered as a potential heart IC [default: 0.5, so if method_chosen == 'absolute_threshold', an IC must be in the top 3 for at least 50% of the metrics]
-     -threshold_std_method2 --> if method_chosen == 'mean_std', an IC will be considered as a potential heart IC if its proportion of conditions met (i.e., its score) is above mean(all_score) + threshold_std_method2 * std(all_score) [default: 2.5]
-     -min_recording_duration_sec --> minimum duration (in sec) of the IC timecourse (default: 20]
-     -mini_bouts_duration_for_SignalAmplRange --> for sanity check (avoids false positive): the time course of a potential heart IC must be ~regular. The timecourse will be divided into mini-segments of this duration, and we will check that the amplitude between these mini-bouts is ~similar. [default: 10]
-     -threshold_regularity_signal_minmax --> For each mini-bout, the averaged signal amplitude is computed. The IC timecourse will be considered as irregular if: (max(Mean_Amp_minibout) - min(Mean_Amp_minibout)) / min(Mean_Amp_minibout) > threshold_regularity_signal_minmax [default: 1.5]
+***cfg --> all the parameters including:
 
-2) comp --> your IC in FieldTrip format 
+     1) method_chosen --> 'absolute_threshold' (method 1) or 'mean_std' (method 2)
+     2) plot_heart_IC --> 1 or 0 (to plot the IC labelled as cardiac)
+     3) path_output --> path where you want to save i) the distribution of the scores (among all IC) and ii) timecourse of the identified cardiac IC (used only if plot_heart_IC == 1)
+     4) file_info --> name of your recording (to add it in the name of your plot files) (used only if plot_heart_IC == 1)
+     5) nb_IC_wanted --> number of IC selected for each metric (kurtosis, skewness...) [default: 3, to select the top 3 IC for each metric]
+     6) bpm_min and bpm_max  --> expected heart beat per min, for sanity check [default: 45 and 90]
+     7) threshold_cond_IC_method1 --> minimum proportion of conditions that must be met in order that an IC could be considered as a potential heart IC [default: 0.5, so if method_chosen == 'absolute_threshold', an IC must be in the top 3 for at least 50% of the metrics]
+     8) threshold_std_method2 --> if method_chosen == 'mean_std', an IC will be considered as a potential heart IC if its proportion of conditions met (i.e., its score) is above mean(all_score) + threshold_std_method2 * std(all_score) [default: 2.5]
+     9) min_recording_duration_sec --> minimum duration (in sec) of the IC timecourse (default: 20]
+     10) mini_bouts_duration_for_SignalAmplRange --> for sanity check (avoids false positive): the time course of a potential heart IC must be ~regular. The timecourse will be divided into mini-segments of this duration, and we will check that the amplitude between these mini-bouts is ~similar. [default: 10]
+     11) threshold_regularity_signal_minmax --> For each mini-bout, the averaged signal amplitude is computed. The IC timecourse will be considered as irregular if: (max(Mean_Amp_minibout) - min(Mean_Amp_minibout)) / min(Mean_Amp_minibout) > threshold_regularity_signal_minmax [default: 1.5]
+
+***comp --> your IC in FieldTrip format 
 
 
 
