@@ -1,4 +1,4 @@
-function [heart_IC, table_cardiac_IC, aaa_parameters_find_heart_IC] = fct_find_cardiac_IC(comp, method_chosen, plot_heart_IC, path_output, file_info)
+function [heart_IC, table_cardiac_IC, aaa_parameters_find_heart_IC] = fct_find_cardiac_IC(cfg, comp)
 
 %% DOCSTRING
 
@@ -17,25 +17,38 @@ function [heart_IC, table_cardiac_IC, aaa_parameters_find_heart_IC] = fct_find_c
 
 
 % %%%%%% INPUTS %%%%%%
-% comp --> your IC in FieldTrip format Ex: EEG = pop_runica(EEG,'icatype','runica','extended',1,'pca',round(dataRank/5)); % Run your ICA with EEGLAB comp = eeglab2fieldtrip(EEG, 'comp'); % Convert into FieldTrip format
+% 1) cfg --> all the parameters including:
+    % -method_chosen --> 'absolute_threshold' (method 1) or 'mean_std' (method 2)
+    % -plot_heart_IC --> 1 or 0 (to plot the IC labelled as cardiac)
+    % -path_output --> path where you want to save i) the distribution of the scores (among all IC) and ii) timecourse of the identified cardiac IC (used only if plot_heart_IC == 1)
+    % -file_info --> name of your recording (to add it in the name of your plot files) (used only if plot_heart_IC == 1)
+    % -nb_IC_wanted --> number of IC selected for each metric (kurtosis, skewness...) [default: 3, to select the top 3 IC for each metric]
+    % -bpm_min and bpm_max  --> expected heart beat per min, for sanity check [default: 45 and 90]
+    % -threshold_cond_IC_method1 --> minimum proportion of conditions that must be met in order that an IC could be considered as a potential heart IC [default: 0.5, so if method_chosen == 'absolute_threshold', an IC must be in the top 3 for at least 50% of the metrics]
+    % -threshold_std_method2 --> if method_chosen == 'mean_std', an IC will be considered as a potential heart IC if its proportion of conditions met (i.e., its score) is above mean(all_score) + threshold_std_method2 * std(all_score) [default: 2.5]
+    % -min_recording_duration_sec --> minimum duration (in sec) of the IC timecourse (default: 20]
+    % -mini_bouts_duration_for_SignalAmplRange --> for sanity check (avoids false positive): the time course of a potential heart IC must be ~regular. The timecourse will be divided into mini-segments of this duration, and we will check that the amplitude between these mini-bouts is ~similar. [default: 10]
+    % -threshold_regularity_signal_minmax --> For each mini-bout, the averaged signal amplitude is computed. The IC timecourse will be considered as irregular if: (max(Mean_Amp_minibout) - min(Mean_Amp_minibout)) / min(Mean_Amp_minibout) > threshold_regularity_signal_minmax [default: 1.5]
 
-% method_chosen --> 'absolute_threshold' (method 1) or 'mean_std' (method 2)
-
-% plot_heart_IC --> 1 or 0 (to plot the IC labelled as cardiac)
-
-% path_output --> path where you want to save i) the distribution of the scores (among all IC) and ii) timecourse of the identified cardiac IC (used only if plot_heart_IC == 1)
-
-% file_info --> name of your recording (to add it in the name of your plot files) (used only if plot_heart_IC == 1)
+% 2) comp --> your IC in FieldTrip format 
 
 
-% %%%%%% USAGE%%%%%%
-% Minimum inputs: If plot_heart_IC == 0 [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(comp, method_chosen, plot_heart_IC);
+% %%%%%% USAGE %%%%%%
+% [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
+%
+% Example 1 (all default parameters):
+% EEG = pop_runica(EEG,'icatype','runica','extended',1,'pca',round(dataRank/5)); %Run your ICA with EEGLAB
+% comp = eeglab2fieldtrip(EEG, 'comp'); % Convert into FieldTrip format
+% cfg = [];
+% [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
 
-% If plot_heart_IC == 1, you can also give your output path and the name of your recording to have it in the file name of your plot [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(comp, method_chosen, plot_heart_IC, path_output, file_info);
+% Example 2 (If you want to use other parameters, specify them in cfg):
+% cfg = [];
+% cfg.nb_IC_wanted = 5; % The heart IC must be in the top 5 of all IC for skewness, kurtosis... of Rampl, RRintervals...
+% cfg.bpm_max = 120; % Max physiological bpm
+% [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
 
-
-% %%%%%% PARAMETERS %%%%%%
-% You can easily change the parameters used at the begining of the function "A_fct_find_cardiac_IC.m" nb_IC_wanted = 3; % The heart IC must be in the top 3 of all IC for skewness, kurtosis... of Rampl, RRintervals... bpm_min = 45; bpm_max = 90; threshold_cond_IC_method1 = 0.5; threshold_std_method2 = 2.5; threshold_regularity_signal_minmax = 1.5; min_recording_duration_sec = 20;
+% Rq: If plot_heart_IC == 1, you must specify cfg.path_output and cfg.file_info (output path and the name of your recording to have it in the file name of your plot) 
 
 
 % %%%%%% TOOLBOX USED TO DETECT CARDIAC EVENTS %%%%%%
@@ -52,16 +65,87 @@ function [heart_IC, table_cardiac_IC, aaa_parameters_find_heart_IC] = fct_find_c
 
 
 
-%% Define parameters --> CAN BE CHANGE BY USER
+%% Extract parameters
 
-nb_IC_wanted = 3; % The heart IC must be in the top 3 of all IC for skewness, kurtosis... of Rampl, RRintervals...
-bpm_min = 45;
-bpm_max = 90;
-threshold_cond_IC_method1 = 0.5;
-threshold_std_method2 = 2.5;
-threshold_regularity_signal_minmax = 1.5;
-min_recording_duration_sec = 20;
-mini_bouts_duration_for_SignalAmplRange = 5; % in sec
+% method_chosen
+if isfield(cfg, 'method_chosen') == 1
+    method_chosen = cfg.method_chosen;
+else
+    method_chosen = 'absolute_threshold'; % absolute_threshold (method 1) or mean_std (method 2)
+end
+
+% plot_heart_IC
+if isfield(cfg, 'plot_heart_IC') == 1
+    plot_heart_IC = cfg.plot_heart_IC;
+else
+    plot_heart_IC = 0;
+end
+
+% path_output and file_info
+if plot_heart_IC == 1
+    try
+        path_output = cfg.path_output;
+        file_info = cfg.file_info;
+    catch
+        error('When plot_heart_IC == 1, you must specified cfg.path_output and cfg.file_info')
+    end
+end
+
+% nb_IC_wanted
+if isfield(cfg, 'nb_IC_wanted') == 1
+    nb_IC_wanted = cfg.nb_IC_wanted;
+else
+    nb_IC_wanted = 3; % default
+end
+
+% bpm_min
+if isfield(cfg, 'bpm_min') == 1
+    bpm_min = cfg.bpm_min;
+else
+    bpm_min = 45;
+end
+
+% bpm_max
+if isfield(cfg, 'bpm_max') == 1
+    bpm_max = cfg.bpm_max;
+else
+    bpm_max = 90;
+end
+
+% threshold_cond_IC_method1
+if isfield(cfg, 'threshold_cond_IC_method1') == 1
+    threshold_cond_IC_method1 = cfg.threshold_cond_IC_method1;
+else
+    threshold_cond_IC_method1 = 0.5;
+end
+
+% threshold_std_method2
+if isfield(cfg, 'threshold_std_method2') == 1
+    threshold_std_method2 = cfg.threshold_std_method2;
+else
+    threshold_std_method2 = 2.5;
+end
+
+% threshold_regularity_signal_minmax
+if isfield(cfg, 'threshold_regularity_signal_minmax') == 1
+    threshold_regularity_signal_minmax = cfg.threshold_regularity_signal_minmax;
+else
+    threshold_regularity_signal_minmax = 1.5;
+end
+
+% min_recording_duration_sec
+if isfield(cfg, 'min_recording_duration_sec') == 1
+    min_recording_duration_sec = cfg.min_recording_duration_sec;
+else
+    min_recording_duration_sec = 20;
+end
+
+% mini_bouts_duration_for_SignalAmplRange
+if isfield(cfg, 'mini_bouts_duration_for_SignalAmplRange') == 1
+    mini_bouts_duration_for_SignalAmplRange = cfg.mini_bouts_duration_for_SignalAmplRange;
+else
+    mini_bouts_duration_for_SignalAmplRange = 10;
+end
 
 
 %% Extract parameters
