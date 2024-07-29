@@ -3,16 +3,19 @@ Find automatically cardiac IC (Independent Component) without ECG
 
 
 %%%%%% AUTHOR %%%%%%
+--------------------
 
 Pierre Champetier (2024)
 Contact: pi.champetier@gmail.com
 
 %%%%%% MAIN FUNCTION %%%%%%
+---------------------------
 
 A_fct_find_cardiac_IC.m
 
 
 %%%%%% AIM %%%%%%
+-----------------
 
 This function takes EEG independent components (IC) as inputs, and finds the cardiac IC. 
   --> To do so:
@@ -27,6 +30,7 @@ This function takes EEG independent components (IC) as inputs, and finds the car
 
 
 %%%%%% INPUTS %%%%%%
+--------------------
 
 ***cfg --> all the parameters including:
 
@@ -47,18 +51,20 @@ This function takes EEG independent components (IC) as inputs, and finds the car
 
 
 %%%%%% USAGE%%%%%%
+------------------
 
 [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
 
 *** Example 1 (all default parameters):
-----------------------------------------
+
 EEG = pop_runica(EEG,'icatype','runica','extended',1,'pca',round(dataRank/5)); %Run your ICA with EEGLAB
 comp = eeglab2fieldtrip(EEG, 'comp'); % Convert into FieldTrip format
 cfg = [];
 [rejected_heart_IC, table_heart_IC, method_reject_cardiac_IC] = A_fct_find_cardiac_IC(cfg, comp);
 
 ***Example 2 (If you want to use other parameters, specify them in cfg):
-------------------------------------------------------------------------
+
+
 cfg = [];
 cfg.nb_IC_wanted = 5; % The heart IC must be in the top 5 of all IC for skewness, kurtosis... of Rampl, RRintervals...
 cfg.bpm_max = 120; % Max physiological bpm
@@ -69,6 +75,7 @@ Rq: If plot_heart_IC == 1, you must specify cfg.path_output and cfg.file_info (o
 
 
 %%%%%% TOOLBOX USED TO DETECT CARDIAC EVENTS %%%%%%
+---------------------------------------------------
 
 Based on R. Sanghavi, F. Chheda, S. Kanchan and S. Kadge, "Detection Of Atrial Fibrillation in Electrocardiogram Signals using Machine Learning," 2021 2nd Global Conference for Advancement in Technology (GCAT), 2021, pp. 1-6, doi: 10.1109/GCAT52182.2021.9587664.
 Info : https://fr.mathworks.com/matlabcentral/fileexchange/73850-ecg-signal-pqrst-peak-detection-toolbox
@@ -77,6 +84,7 @@ Citation pour cette source: Rohan Sanghavi (2024). ECG SIGNAL PQRST PEAK DETECTI
 
 
 %%%%%% DEPENDENCIES %%%%%%
+--------------------------
 
 1) A_fct_test_unif.m (To test the uniform distribution of cardiac events)
 2) ECG_PQRST_VERSION_3 (Toolbox used to detect cardiac events) 
