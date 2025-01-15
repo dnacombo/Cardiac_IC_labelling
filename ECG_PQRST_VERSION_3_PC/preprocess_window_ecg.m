@@ -22,7 +22,7 @@ a = 1;
 ecg1 = filter(b,a,ecg);
 ecg_f = baseline_remove(ecg1);    
 ecg_f = ecg_f./max(ecg_f);
-ecg_f = ecg_f(100:end);
+ecg_f = ecg_f(100:end); 
 
 
 [~,locs_R,delay]=pan_tompkin2(ecg_f,fs); %more accurate.
@@ -49,7 +49,7 @@ for k = 1:length(locs_Rn)
         dist_with_peak = [];
         for iter_PC = 1:length(temp_PC)
             value_iter_PC = temp_PC(iter_PC);
-            dist_with_peak = [dist_with_peak, abs(locs_Rf(k-1) - value_iter_PC)];
+            dist_with_peak = [dist_with_peak, abs(locs_Rn(k) - value_iter_PC)];
         end
         % Find the min dist locs_Pf
         [minValue_PC, minIndex_PC] = min(dist_with_peak);

@@ -152,7 +152,28 @@ if flag_T == 0
     locs_Tfround2((locsfinale2)) = length(ecg_f);
     
     for k = 1:length(locs_Tf1)
-        locs_Tf(k) =  find(ecg_f == max(ecg_f(locs_Tf1(k):locs_Tfround2(k))));
+        % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+        %%%%%%%%%% OLD (bug if two timepoint have exactly the same value
+        % locs_Tf(k) =  find(ecg_f == max(ecg_f(locs_Tf1(k):locs_Tfround2(k))));
+        %%%%%%%%%% PIERRE
+        % Find the candidates for the peak
+        temp_PC =  find(ecg_f == max(ecg_f(locs_Tf1(k):locs_Tfround2(k))));
+        % If several values, find the one closer to the P peak
+        if length(temp_PC) > 1
+            % Compute dist to the P peak
+            dist_with_P_peak = [];
+            for iter_PC = 1:length(temp_PC)
+                value_iter_PC = temp_PC(iter_PC);
+                dist_with_P_peak = [dist_with_P_peak, abs(locs_Tf1(k) - value_iter_PC)];
+            end
+            % Find the min dist locs_Pf
+            [minValue_PC, minIndex_PC] = min(dist_with_P_peak);
+            % Add it to locs_Pf
+            locs_Tf(k) = temp_PC(minIndex_PC);
+        else
+            locs_Tf(k) =  temp_PC;
+        end
+        % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
     end
 elseif flag_T == 1
     locs_Tfround2 = locs_Tf1 + search_offsetT;
