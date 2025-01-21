@@ -311,8 +311,18 @@ else
 
         % Detect cardiac events
         % try
-            ecg_f = preprocess_window_ecg(ecg_1, fs);
-            [locs_P,locs_Q,locs_R,locs_S,locs_T] = compute_fudicial_peaks_live17_c(ecg_f, fs, plot_data); % Why the nb of samples in ecg_f is lower than in ecg_1?? For some IC it's super low....
+            % ecg_f = preprocess_window_ecg(ecg_1, fs);
+            ecg_f = ecg_1;
+            % [locs_P,locs_Q,locs_R,locs_S,locs_T] = compute_fudicial_peaks_live17_c(ecg_f, fs, plot_data); % Why the nb of samples in ecg_f is lower than in ecg_1?? For some IC it's super low....
+            cfg_peak = [];
+            cfg_peak.channel = comp.label{comp_iter};
+ 
+            [HeartBeats] = heart_peak_detect(cfg_peak,comp);
+            locs_P = HeartBeats.P_sample;
+            locs_Q = HeartBeats.Q_sample;
+            locs_R = HeartBeats.R_sample;
+            locs_S = HeartBeats.S_sample;
+            locs_T = HeartBeats.T_sample;
 
         % catch
         %     IC_bug = [IC_bug, comp_iter]; % I don't know why but the function preprocess_window_ecg bug for some recordings
@@ -321,7 +331,7 @@ else
 
 
         % Check enough data
-        duration_sec_data_iter = length(ecg_f) / fs;
+        duration_sec_data_iter = length(ecg_1) / fs;
         if duration_sec_data_iter < min_recording_duration_sec
             IC_bug = [IC_bug, comp_iter];
             continue
