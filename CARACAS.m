@@ -315,14 +315,19 @@ else
             ecg_f = ecg_1;
             % [locs_P,locs_Q,locs_R,locs_S,locs_T] = compute_fudicial_peaks_live17_c(ecg_f, fs, plot_data); % Why the nb of samples in ecg_f is lower than in ecg_1?? For some IC it's super low....
             cfg_peak = [];
+            % cfg_peak.plotall         = 0;
+            % cfg_peak.plotthresh      = 0;
+            % cfg_peak.plotbeat        = 0;
+            % cfg_peak.plotcorr        = 0;
+            % cfg_peak.plotfinal       = 0;
             cfg_peak.channel = comp.label{comp_iter};
  
             [HeartBeats] = heart_peak_detect(cfg_peak,comp);
-            locs_P = HeartBeats.P_sample;
-            locs_Q = HeartBeats.Q_sample;
-            locs_R = HeartBeats.R_sample;
-            locs_S = HeartBeats.S_sample;
-            locs_T = HeartBeats.T_sample;
+            locs_P = [HeartBeats.P_sample];
+            locs_Q = [HeartBeats.Q_sample];
+            locs_R = [HeartBeats.R_sample];
+            locs_S = [HeartBeats.S_sample];
+            locs_T = [HeartBeats.T_sample];
 
         % catch
         %     IC_bug = [IC_bug, comp_iter]; % I don't know why but the function preprocess_window_ecg bug for some recordings
