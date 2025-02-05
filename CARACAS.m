@@ -64,8 +64,8 @@ function [aaa_parameters_find_heart_IC, output_for_zscore_corMatrix_ROC, output_
 % ECG_PQRST_VERSION_3_PC (Toolbox used to detect cardiac events) --> Rq: I did small modifications of 'compute_fudicial_peaks_live17_c' and 'preprocess_window_ecg' functions to avoid errors with some IC (all modifications are preceeded by a comment "PIERRE").
 
 % add ECG toolbox to the path
-addpath(fullfile(fileparts(which(mfilename)),'ECG_PQRST_VERSION_3_PC'))
-
+% addpath(fullfile(fileparts(which(mfilename)),'ECG_PQRST_VERSION_3_PC'))
+addpath(fullfile(fileparts(which(mfilename)),'heart_functions'))
 %% CONSTANT PARAMETERS
 
 fs = comp.fsample;
