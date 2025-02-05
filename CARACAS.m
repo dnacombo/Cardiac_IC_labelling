@@ -1360,6 +1360,9 @@ else
 % 
 % 
 % 
+            figure(94480); clf;
+            set(gcf,'WindowState', 'maximized'); % Open a maximized figure window
+
 %         %%%%%%%%%%%%%%% Several plots per window %%%%%%%%%%%%%
         nbr_plot_per_window = 9; % If it is changed, change also subplot parameters
         nbr_IC = length(comp.label);
@@ -1369,8 +1372,8 @@ else
 
             IC_start = i;
             IC_stop =  min(i + nbr_plot_per_window - 1, nbr_IC); % Make sure we don't go beyond n
-
-            figure('WindowState', 'maximized'); % Open a maximized figure window
+            
+            figure(94480); clf;
             for IC_to_plot = IC_start:IC_stop
                 position_idx = mod(IC_to_plot, nbr_plot_per_window); % 10 --> 1, 11 --> 2...
                 if position_idx == 0
