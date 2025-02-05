@@ -231,7 +231,7 @@ else
     comp_continu = ft_redefinetrial(cfgtmp, comp);
 
     % Extract timecourse
-    timecourse_all_IC = comp_continu.trial{1,1};
+    timecourse_all_IC = comp_continu.trial{1};
 
     %% Plot IC
     % for comp_iter = 1:6
@@ -242,7 +242,7 @@ else
     % % 
 
 
-    IC_timecourse_new = comp_continu.trial{1,1};
+    IC_timecourse_new = comp_continu.trial{1};
     %
     % for comp_iter = 1:6
     %     figure
@@ -1379,11 +1379,9 @@ else
                 subplot(3, 3, position_idx); 
 
                 % Generate a plot
-                if ismember(IC_to_plot, heart_IC)
-                    plot([1:size(IC_timecourse,2)]/comp.fsample, IC_timecourse(IC_to_plot,:),'r')
-                else
-                    plot([1:size(IC_timecourse,2)]/comp.fsample, IC_timecourse(IC_to_plot,:))
-                end
+                timetoplot = [0 20]; % <<- parametrize?
+                t = timepts(timetoplot, comp.time{1});
+                plot(comp.time{1}(t), comp.trial{1}(IC_to_plot,t), ifelse(ismember(IC_to_plot, heart_IC),'r',''));
 
                 % Add a title and grid
                 title(['IC ' num2str(IC_to_plot)])
