@@ -1394,6 +1394,7 @@ else
             end
             % %%%%% SAVE fig as .png %%%%%%%%
             filename = strcat(cfg.path_output, '/IC_timecourse/', file_info, '_IC ', num2str(IC_start), '_to_IC_', num2str(IC_stop), '.png');
+            mymkdir(fileparts(filename))
             saveas(gcf, filename);
             close(gcf);
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
