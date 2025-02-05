@@ -433,6 +433,7 @@ else
 
 
             catch
+                warning('error in heart_peak_detect')
                 % nbr_cardiac_event = [nbr_cardiac_event; comp_iter 0];
                 locs_P = [];
             end
