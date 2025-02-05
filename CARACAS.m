@@ -433,7 +433,8 @@ else
 
 
             catch
-                nbr_cardiac_event = [nbr_cardiac_event; comp_iter 0];
+                % nbr_cardiac_event = [nbr_cardiac_event; comp_iter 0];
+                locs_P = [];
             end
 
             nbr_cardiac_event = [nbr_cardiac_event; comp_iter length(locs_P)];
