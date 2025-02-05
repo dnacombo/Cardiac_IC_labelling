@@ -225,8 +225,8 @@ else
     if isfield(comp, 'sampleinfo') 
         cfgtmp.trl = [1, comp.sampleinfo(end,2), 0];
     else
-        error('Error: no sampleinfo in comp')
-        % cfgtmp.trl = [1, length(comp.time{1}) * length(comp.time), 0]; % Start, End, Offset
+        % error('Error: no sampleinfo in comp')
+        cfgtmp.trl = [1, sum(cellfun(@numel,comp.time)), 0]; % Start, End, Offset
     end
     comp_continu = ft_redefinetrial(cfgtmp, comp);
 
