@@ -1,4 +1,4 @@
-function [aaa_parameters_find_heart_IC, output_for_zscore_corMatrix_ROC, output_for_user] = CARACAS(cfg, comp)
+function [heart_IC, aaa_parameters_find_heart_IC, output_for_zscore_corMatrix_ROC, output_for_user] = CARACAS(cfg, comp)
 
 %% DOCSTRING
 
