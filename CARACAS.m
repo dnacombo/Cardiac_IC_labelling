@@ -195,7 +195,10 @@ aaa_parameters_find_heart_IC.IC_to_not_analyze = IC_to_not_analyze;
 % Checking that recording_duration_sec > mini_bouts_duration_for_SignalAmplRange
 sample_tot = 0;
 for i = 1:length(comp.trial)
-    sample_tot = sample_tot + size(comp.trial{i},2);
+    sample_tot = sample_tot + size(comp.trial{i},2) - round(0.5 * fs); 
+    % assuming HB detection isn't working properly on edges so we discard
+    % 0.5s for each trial in this sample_tot.
+    % This is used only for bpm computation at the end.
 end
 recording_duration_sec = sample_tot / fs;
 
