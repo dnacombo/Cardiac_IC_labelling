@@ -1,4 +1,4 @@
-function [heart_IC, aaa_parameters_find_heart_IC, output_for_zscore_corMatrix_ROC, output_for_user] = CARACAS(cfg, comp)
+function [heart_IC, meas, aaa_parameters_find_heart_IC, output_for_zscore_corMatrix_ROC, output_for_user] = CARACAS(cfg, comp)
 
 %% DOCSTRING
 
@@ -283,10 +283,11 @@ else
 
 
     nbr_cardiac_event = [];
-    IC_not_cardiac_bc_PQstd = [];
+    IC_not_cardiac_bc_QSstd = [];
     IC_not_cardiac_bc_RRstd = [];
     IC_not_cardiac_bc_Ramplstd = [];
 
+    meas = [];
     for comp_iter = 1:length(comp.label)
         % Skip if user don't want to analyze this IC
         if ismember(comp_iter, IC_to_not_analyze)
@@ -335,7 +336,7 @@ else
         % cfg_peak.plotcorr        = 0;
         % cfg_peak.plotfinal       = 1;
         cfg_peak.channel = comp.label{comp_iter};
-        % cfg_peak.corthresh = 0.6;
+        cfg_peak.corthresh = 0.2;
 
         % try
             % cfg = [];
@@ -356,23 +357,24 @@ else
 
 
 
-            % PQ intervals
+            % QS intervals
             %%%%%%%%%%%%%
-            PQ_intervals_sec = [HeartBeats.P_time] - [HeartBeats.Q_time];
+            QS_intervals_sec = [HeartBeats.Q_time] - [HeartBeats.S_time];
 
             % figure;
-            % hist(PQ_intervals_sec)
+            % hist(QS_intervals_sec)
 
-            low_threshold = prctile(PQ_intervals_sec, 15); 
-            high_threshold = prctile(PQ_intervals_sec, 85); 
+            low_threshold = prctile(QS_intervals_sec, 15); 
+            high_threshold = prctile(QS_intervals_sec, 85); 
 
-            filtered_PQ_intervals = PQ_intervals_sec(PQ_intervals_sec >= low_threshold & PQ_intervals_sec <= high_threshold);
+            filtered_QS_intervals = QS_intervals_sec(QS_intervals_sec >= low_threshold & QS_intervals_sec <= high_threshold);
 
             % figure;
-            % hist(filtered_PQ_intervals);
+            % hist(filtered_QS_intervals);
+            meas(comp_iter).QS = std(filtered_QS_intervals)/(abs(mean(filtered_QS_intervals)));
 
-            if std(filtered_PQ_intervals) > abs(mean(filtered_PQ_intervals))/3
-                IC_not_cardiac_bc_PQstd = [IC_not_cardiac_bc_PQstd, comp_iter];
+            if meas(comp_iter).QS > 1 / 3
+                IC_not_cardiac_bc_QSstd = [IC_not_cardiac_bc_QSstd, comp_iter];
             end
 
 
@@ -391,8 +393,8 @@ else
 
             % figure;
             % hist(filtered_RR_intervals);
-
-            if std(filtered_RR_intervals) > mean(filtered_RR_intervals)/3
+            meas(comp_iter).RR = std(filtered_RR_intervals) / mean(filtered_RR_intervals);
+            if meas(comp_iter).RR > 1 / 3
                 IC_not_cardiac_bc_RRstd = [IC_not_cardiac_bc_RRstd, comp_iter];
             end
 
@@ -414,8 +416,8 @@ else
 
             % figure;
             % hist(filtered_Rampl);
-
-            if std(filtered_Rampl) > abs(mean(filtered_Rampl))/3
+            meas(comp_iter).Rampl = std(filtered_Rampl) / abs(mean(filtered_Rampl));
+            if meas(comp_iter).Rampl > 1 /3
                 IC_not_cardiac_bc_Ramplstd = [IC_not_cardiac_bc_Ramplstd, comp_iter];
             end
 
@@ -473,7 +475,8 @@ else
         % Compute a metric to evaluate if the signal is regular over the recording (max-min)/mean
         SignalAmpl_range = (max(SignalAmpl_mean_segments) - min(SignalAmpl_mean_segments)) / min(SignalAmpl_mean_segments);
         SignalAmpl_range_all_IC = [SignalAmpl_range_all_IC; comp_iter, SignalAmpl_range];
-
+        
+        meas(comp_iter).Ampl_var = SignalAmpl_range;
     end
 
 
@@ -499,13 +502,13 @@ else
     heart_IC = nbr_cardiac_event(nbr_cardiac_event(:,3) >= bpm_min & nbr_cardiac_event(:,3) <= bpm_max, :);
     heart_IC = heart_IC(:,1);
 
-
+    [meas.bpm] = rep2struct(nbr_cardiac_event(:,3));
 
     % 2) Remove potential cardiac if too high std for RR interval or Rampl
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 
-    % For PQ interval
-    idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_PQstd));
+    % For QS interval
+    idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_QSstd));
     heart_IC(idx_IC_with_too_high_std) = [];
 
     % % For QR interval
@@ -535,7 +538,7 @@ else
     IC_not_cardiac_bc_Ramplstd = SignalAmpl_range_all_IC(idx_SignalAmpl_range,1);
 
     idx_IC_with_too_high_SignalAmpl_range = find(ismember(heart_IC, IC_not_cardiac_bc_Ramplstd));
-    heart_IC(idx_IC_with_too_high_SignalAmpl_range) = [];
+    % heart_IC(idx_IC_with_too_high_SignalAmpl_range) = [];
 
 
     %% Save output
@@ -556,7 +559,7 @@ else
         output_for_user.heart_IC = NaN;
         output_for_user.heart_IC_nbr_cardiac_event = NaN;
     end
-    if cfg.plot_heart_IC
+    if plot_heart_IC
 
         figure(94480); clf;
         set(gcf,'WindowState', 'maximized'); % Open a maximized figure window
