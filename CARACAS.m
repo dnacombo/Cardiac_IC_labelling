@@ -70,6 +70,10 @@ addpath(fullfile(fileparts(which(mfilename)),'heart_functions'))
 
 fs = comp.fsample;
 
+if numel(comp.trial) > 1
+    error('data should be continuous');
+end
+
 % Window for ERP
 window = 0.2*fs; % 0.2s before and 0.2s after the R peak
 
@@ -195,9 +199,15 @@ aaa_parameters_find_heart_IC.IC_to_not_analyze = IC_to_not_analyze;
 % Checking that recording_duration_sec > mini_bouts_duration_for_SignalAmplRange
 sample_tot = 0;
 for i = 1:length(comp.trial)
-    sample_tot = sample_tot + size(comp.trial{i},2) - round(0.5 * fs); 
+    blocs = isnan(comp.trial{i}(1,:));
+    d = diff(blocs);
+    s = find(d == 1);
+    sample_tot = sample_tot + size(comp.trial{i},2) - round(0.5 * fs) * numel(s) - sum(blocs);
     % assuming HB detection isn't working properly on edges so we discard
     % 0.5s for each trial in this sample_tot.
+    % In case the trial is continuous, but has nans in it (if trial data
+    % has been turned to continuous prior to entering CARACAS), we discard
+    % this 0.5s for each block.
     % This is used only for bpm computation at the end.
 end
 recording_duration_sec = sample_tot / fs;
@@ -219,21 +229,21 @@ else
     %% OLD: Extract timecourse of each IC for all 1s-mini trials
 
     IC_timecourse = [];
-    for i = 1:size(comp.trial,2)
+    for i = 1:numel(comp.trial)
         IC_timecourse = [IC_timecourse, comp.trial{1,i}];
     end
 
     %% NEW: Recreate continuous comp data
-    cfgtmp = [];
-    if isfield(comp, 'sampleinfo')
-        cfgtmp.trl = [1, comp.sampleinfo(end,2), 0];
-    else
-        cfgtmp.trl = [1, sum(cellfun(@numel,comp.time)), 0]; % Start, End, Offset
-    end
-    comp_continu = ft_redefinetrial(cfgtmp, comp);
-
+    % cfgtmp = [];
+    % if isfield(comp, 'sampleinfo')
+    %     cfgtmp.trl = [1, comp.sampleinfo(end,2), 0];
+    % else
+    %     cfgtmp.trl = [1, sum(cellfun(@numel,comp.time)), 0]; % Start, End, Offset
+    % end
+    % comp_continu = ft_redefinetrial(cfgtmp, comp);
+    %
     % Extract timecourse
-    timecourse_all_IC = comp_continu.trial{1};
+    timecourse_all_IC = comp.trial{1};
 
     %% DETECT CARDIAC EVENTS
 
@@ -344,7 +354,7 @@ else
             % cfg.layout    = evalin('base','layout');
             % ft_databrowser(cfg, comp);
 
-            [HeartBeats] = heart_peak_detect(cfg_peak,comp_continu);
+        [HeartBeats] = heart_peak_detect(cfg_peak,comp);
 
 
             locs_P = [HeartBeats.P_sample];
