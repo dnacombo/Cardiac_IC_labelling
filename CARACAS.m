@@ -29,7 +29,7 @@ function [heart_IC, meas, aaa_parameters_find_heart_IC, output_for_zscore_corMat
 %   -min_recording_duration_sec --> minimum duration (in sec) of the IC timecourse (default: 20]
 %   -mini_bouts_duration_for_SignalAmplRange --> for sanity check (avoids false positive): the time course of a potential heart IC must be ~regular. The timecourse will be divided into mini-segments of this duration, and we will check that the amplitude between these mini-bouts is ~similar. [default: 10]
 % - threshold_regularity_signal_minmax --> For each mini-bout, the averaged signal amplitude is computed. The IC timecourse will be considered as irregular if: (max(Mean_Amp_minibout) - min(Mean_Amp_minibout)) / min(Mean_Amp_minibout) > threshold_regularity_signal_minmax [default: 1.5]
-% 
+%
 % 2) comp --> your IC in FieldTrip format
 
 
@@ -293,9 +293,10 @@ else
 
 
     nbr_cardiac_event = [];
-    IC_not_cardiac_bc_QSstd = [];
+    IC_not_cardiac_bc_PQstd = [];
     IC_not_cardiac_bc_RRstd = [];
     IC_not_cardiac_bc_Ramplstd = [];
+    IC_not_cardiac_bc_skewcorr = NaN([1,numel(comp.label)]);
 
     meas = [];
     for comp_iter = 1:length(comp.label)
@@ -347,89 +348,89 @@ else
         % cfg_peak.plotfinal       = 1;
         cfg_peak.channel = comp.label{comp_iter};
         cfg_peak.corthresh = 0.2;
+        cfg_peak.absPT = 0;
 
         % try
-            % cfg = [];
-            % cfg.viewmode  = 'component';
-            % cfg.layout    = evalin('base','layout');
-            % ft_databrowser(cfg, comp);
+        % cfg = [];
+        % cfg.viewmode  = 'component';
+        % cfg.layout    = evalin('base','layout');
+        % ft_databrowser(cfg, comp);
 
         [HeartBeats] = heart_peak_detect(cfg_peak,comp);
 
 
-            locs_P = [HeartBeats.P_sample];
-            locs_Q = [HeartBeats.Q_sample];
-            locs_R = [HeartBeats.R_sample];
-            locs_S = [HeartBeats.S_sample];
-            locs_T = [HeartBeats.T_sample];
+        locs_P = [HeartBeats.P_sample];
+        locs_Q = [HeartBeats.Q_sample];
+        locs_R = [HeartBeats.R_sample];
+        locs_S = [HeartBeats.S_sample];
+        locs_T = [HeartBeats.T_sample];
 
 
 
 
 
-            % QS intervals
-            %%%%%%%%%%%%%
-            QS_intervals_sec = [HeartBeats.Q_time] - [HeartBeats.S_time];
+        meas(comp_iter).PQ = gimme_interval('PQ', HeartBeats);
+        meas(comp_iter).QS = gimme_interval('QS', HeartBeats);
+        meas(comp_iter).ST = gimme_interval('ST', HeartBeats);
+        meas(comp_iter).PR = gimme_interval('PR', HeartBeats);
+        meas(comp_iter).RT = gimme_interval('RT', HeartBeats);
+        meas(comp_iter).PT = gimme_interval('PT', HeartBeats);
 
-            % figure;
-            % hist(QS_intervals_sec)
+        meas(comp_iter).sk = HeartBeats.sk;
+        if meas(comp_iter).sk < 2
+            IC_not_cardiac_bc_skewcorr = [IC_not_cardiac_bc_skewcorr, comp_iter];
+        end
+        meas(comp_iter).ku = HeartBeats.ku;
+        % todo mettre un critère pour ku
 
-            low_threshold = prctile(QS_intervals_sec, 15); 
-            high_threshold = prctile(QS_intervals_sec, 85); 
-
-            filtered_QS_intervals = QS_intervals_sec(QS_intervals_sec >= low_threshold & QS_intervals_sec <= high_threshold);
-
-            % figure;
-            % hist(filtered_QS_intervals);
-            meas(comp_iter).QS = std(filtered_QS_intervals)/(abs(mean(filtered_QS_intervals)));
-
-            if meas(comp_iter).QS > 1 / 3
-                IC_not_cardiac_bc_QSstd = [IC_not_cardiac_bc_QSstd, comp_iter];
-            end
+        if meas(comp_iter).PQ > 1 / 3
+            IC_not_cardiac_bc_PQstd = [IC_not_cardiac_bc_PQstd, comp_iter];
+        end
 
 
 
-            % RR intervals
-            %%%%%%%%%%%%%%
-            RR_intervals_sec = diff([HeartBeats.R_time]);
-            % figure;
-            % hist(RR_intervals_sec);
 
-            % Remove lowest 5% and highest 20% lowest values (that biase the std)
-            low_threshold = prctile(RR_intervals_sec, 0);
-            high_threshold = prctile(RR_intervals_sec, 70);
+        % RR intervals
+        %%%%%%%%%%%%%%
+        RR_intervals_sec = diff([HeartBeats.R_time]);
+        % figure;
+        % hist(RR_intervals_sec);
 
-            filtered_RR_intervals = RR_intervals_sec(RR_intervals_sec >= low_threshold & RR_intervals_sec <= high_threshold);
+        % Remove lowest 5% and highest 20% lowest values (that biase the std)
+        low_threshold = prctile(RR_intervals_sec, 0);
+        high_threshold = prctile(RR_intervals_sec, 70);
 
-            % figure;
-            % hist(filtered_RR_intervals);
-            meas(comp_iter).RR = std(filtered_RR_intervals) / mean(filtered_RR_intervals);
-            if meas(comp_iter).RR > 1 / 3
-                IC_not_cardiac_bc_RRstd = [IC_not_cardiac_bc_RRstd, comp_iter];
-            end
+        filtered_RR_intervals = RR_intervals_sec(RR_intervals_sec >= low_threshold & RR_intervals_sec <= high_threshold);
+
+        % figure;
+        % hist(filtered_RR_intervals);
+        meas(comp_iter).RR = std(filtered_RR_intervals) / mean(filtered_RR_intervals);
+        if meas(comp_iter).RR > 1 / 3
+            IC_not_cardiac_bc_RRstd = [IC_not_cardiac_bc_RRstd, comp_iter];
+        end
 
 
-            % Rampl
-            %%%%%%%
-            time_course_IC_iter = timecourse_all_IC(comp_iter,:);
-            Rampl = time_course_IC_iter(locs_R);
-            Rampl = abs(Rampl);
+        % Rampl
+        %%%%%%%
+        time_course_IC_iter = timecourse_all_IC(comp_iter,:);
+        Rampl = time_course_IC_iter(locs_R);
+        Rampl = abs(Rampl);
 
-            % figure;
-            % hist(Rampl);
+        % figure;
+        % hist(Rampl);
 
-            % Remove lowest 15% and highest 15% lowest values (that biase the std)
-            low_threshold = prctile(Rampl, 15);  % 5th percentile
-            high_threshold = prctile(Rampl, 85); % 95th percentile
+        % Remove lowest 15% and highest 15% lowest values (that biase the std)
+        low_threshold = prctile(Rampl, 15);  % 5th percentile
+        high_threshold = prctile(Rampl, 85); % 95th percentile
 
-            filtered_Rampl = Rampl(Rampl >= low_threshold & Rampl <= high_threshold);
+        filtered_Rampl = Rampl(Rampl >= low_threshold & Rampl <= high_threshold);
 
-            % figure;
-            % hist(filtered_Rampl);
-            meas(comp_iter).Rampl = std(filtered_Rampl) / abs(mean(filtered_Rampl));
-            if meas(comp_iter).Rampl > 1 /3
-                IC_not_cardiac_bc_Ramplstd = [IC_not_cardiac_bc_Ramplstd, comp_iter];
-            end
+        % figure;
+        % hist(filtered_Rampl);
+        meas(comp_iter).Rampl = std(filtered_Rampl) / abs(mean(filtered_Rampl));
+        if meas(comp_iter).Rampl > 1 /3
+            IC_not_cardiac_bc_Ramplstd = [IC_not_cardiac_bc_Ramplstd, comp_iter];
+        end
 
 
 
@@ -485,7 +486,7 @@ else
         % Compute a metric to evaluate if the signal is regular over the recording (max-min)/mean
         SignalAmpl_range = (max(SignalAmpl_mean_segments) - min(SignalAmpl_mean_segments)) / min(SignalAmpl_mean_segments);
         SignalAmpl_range_all_IC = [SignalAmpl_range_all_IC; comp_iter, SignalAmpl_range];
-        
+
         meas(comp_iter).Ampl_var = SignalAmpl_range;
     end
 
@@ -518,8 +519,8 @@ else
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 
     % For QS interval
-    idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_QSstd));
-    heart_IC(idx_IC_with_too_high_std) = [];
+    % idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_PQstd));
+    % heart_IC(idx_IC_with_too_high_std) = [];
 
     % % For QR interval
     % idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_QRstd));
@@ -538,16 +539,20 @@ else
     heart_IC(idx_IC_with_too_high_std) = [];
 
     % For Rampl
-    idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_Ramplstd));
-    heart_IC(idx_IC_with_too_high_std) = [];
+    % idx_IC_with_too_high_std = find(ismember(heart_IC, IC_not_cardiac_bc_Ramplstd));
+    % heart_IC(idx_IC_with_too_high_std) = [];
+
+    % skewcorr
+    idx_IC_with_too_low_skewcorr = find(ismember(heart_IC, IC_not_cardiac_bc_skewcorr));
+    heart_IC(idx_IC_with_too_low_skewcorr) = [];
 
 
     % 3) Remove potential cardiac if too high SignalAmpl range
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
-    idx_SignalAmpl_range = find(SignalAmpl_range_all_IC(:,2) > threshold_regularity_signal_minmax);
-    IC_not_cardiac_bc_Ramplstd = SignalAmpl_range_all_IC(idx_SignalAmpl_range,1);
-
-    idx_IC_with_too_high_SignalAmpl_range = find(ismember(heart_IC, IC_not_cardiac_bc_Ramplstd));
+    % idx_SignalAmpl_range = find(SignalAmpl_range_all_IC(:,2) > threshold_regularity_signal_minmax);
+    % IC_not_cardiac_bc_Ramplstd = SignalAmpl_range_all_IC(idx_SignalAmpl_range,1);
+    % 
+    % idx_IC_with_too_high_SignalAmpl_range = find(ismember(heart_IC, IC_not_cardiac_bc_Ramplstd));
     % heart_IC(idx_IC_with_too_high_SignalAmpl_range) = [];
 
 
@@ -617,3 +622,22 @@ else
 end
 
 
+end
+
+
+function interval = gimme_interval(l, HeartBeats)
+
+intervals_sec = [HeartBeats.([l(1) '_time'])] - [HeartBeats.([l(2) '_time'])];
+
+% figure;
+% hist(intervals_sec)
+
+low_threshold = prctile(intervals_sec, 15);
+high_threshold = prctile(intervals_sec, 85);
+
+filtered_intervals = intervals_sec(intervals_sec >= low_threshold & intervals_sec <= high_threshold);
+
+% figure;
+% hist(filtered_intervals);
+interval = std(filtered_intervals)/(abs(mean(filtered_intervals)));
+end
